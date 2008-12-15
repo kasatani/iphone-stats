@@ -2,7 +2,7 @@ Simple script for summarizing downloads from App Store.
 
 To see daily downloads, download daily reports from iTunes Connect, and run the following command. Replace REPORT_DIR with the directory that contains the downloaded report.
 
-gzip -cd REPORT_DIR/*.gz | stat.rb date
+gzip -cd REPORT_DIR/*.gz | ruby stat.rb date
 
 You can change "date" to "country" to see downloads by countries.
 
