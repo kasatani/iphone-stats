@@ -39,7 +39,19 @@ class Stat
 
   # Date.parse is expensive, so cache it
   def parse_date(date)
-    @date_cache[date] ||= Date.parse(date)
+    parsed = @date_cache[date]
+    if parsed
+      parsed
+    else
+      if date =~ /^(\d{4})(\d{2})(\d{2})$/
+        parsed = Date.new($1.to_i, $2.to_i, $3.to_i)
+      elsif date =~ /^(\d{2})\/(\d{2})\/(\d{4})$/
+        parsed = Date.new($3.to_i, $1.to_i, $2.to_i)
+      else
+        raise "unknown format"
+      end
+      @date_cache[date] = parsed
+    end
   end
 
   def parse
