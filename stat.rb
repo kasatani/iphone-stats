@@ -54,8 +54,8 @@ class Stat
     end
   end
 
-  def parse
-    while line = $stdin.gets
+  def parse(input)
+    while line = input.gets
       provider, prov_country, vendor, upc, isrc, show, title, label, product, units, royalty, begin_date, end_date, cust_curr, country = line.split(/\t/)
       next if "1" != product # don't count upgrades
       next if "Provider" == provider # skip header
@@ -67,6 +67,7 @@ class Stat
       @dates[date] += units
       @total += units
     end
+    self
   end
 
   def print_country(*args)
@@ -113,7 +114,7 @@ stat = Stat.new
 method = "print_#{ARGV[0]}"
 if stat.respond_to?(method)
   args = ARGV[1..-1]
-  stat.parse
+  stat.parse($stdin)
   stat.send(method, *args)
 else
   methods = stat.public_methods.select{|m|m=~/^print_/}.map{|m|m.sub(/^print_/,'')}.sort
