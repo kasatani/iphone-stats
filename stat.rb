@@ -54,11 +54,14 @@ class Stat
     end
   end
 
-  def parse(input)
+  def parse(input, options = {})
     while line = input.gets
       provider, prov_country, vendor, upc, isrc, show, title, label, product, units, royalty, begin_date, end_date, cust_curr, country = line.split(/\t/)
       next if "1" != product # don't count upgrades
       next if "Provider" == provider # skip header
+      if options[:app]
+        next if options[:app] != vendor
+      end
       units = units.to_i
       @countries[country] ||= 0
       @countries[country] += units
@@ -111,12 +114,16 @@ class Stat
 end
 
 stat = Stat.new
-method = "print_#{ARGV[0]}"
+if ARGV[0] == "-a"
+  ARGV.shift
+  app = ARGV.shift
+end
+method = "print_#{ARGV.shift}"
 if stat.respond_to?(method)
-  args = ARGV[1..-1]
-  stat.parse($stdin)
+  args = ARGV
+  stat.parse($stdin, :app => app)
   stat.send(method, *args)
 else
   methods = stat.public_methods.select{|m|m=~/^print_/}.map{|m|m.sub(/^print_/,'')}.sort
-  $stderr.puts "Usage: gzip -cd foo.gz bar.gz | #{$0} [#{methods.join("|")}]"
+  $stderr.puts "Usage: gzip -cd foo.gz bar.gz | #{$0} [-a APP_SKU] {#{methods.join("|")}}"
 end
