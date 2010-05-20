@@ -17,6 +17,8 @@
 require "date"
 
 class Stat
+  attr_accessor :date_type
+
   def init_country_codes
     @country_codes = {}
     open("#{File.dirname(__FILE__)}/country_codes.txt") do |f|
@@ -50,6 +52,9 @@ class Stat
       else
         raise "unknown format"
       end
+      if :month == date_type
+        parsed = Date.new(parsed.year, parsed.month)
+      end
       @date_cache[date] = parsed
     end
   end
@@ -57,7 +62,7 @@ class Stat
   def parse(input, options = {})
     while line = input.gets
       provider, prov_country, vendor, upc, isrc, show, title, label, product, units, royalty, begin_date, end_date, cust_curr, country = line.split(/\t/)
-      next if "1" != product # don't count upgrades
+      next unless ["1", "IA1"].include?(product) # don't count upgrades
       next if "Provider" == provider # skip header
       if options[:app]
         next if options[:app] != vendor
@@ -117,6 +122,10 @@ stat = Stat.new
 if ARGV[0] == "-a"
   ARGV.shift
   app = ARGV.shift
+end
+if ARGV[0] == "-m"
+  ARGV.shift
+  stat.date_type = :month
 end
 method = "print_#{ARGV.shift}"
 if stat.respond_to?(method)

@@ -13,12 +13,16 @@ class ItunesConnect
   end
   
   def login(account, password)
+#    page = @agent.get("https://itts.apple.com/")
     page = @agent.get("https://itunesconnect.apple.com/")
     form = page.forms[0]
     form.theAccountName = account
     form.theAccountPW = password
     page = form.submit
+#    form = page.form_with(:name => "frmVendorPage")
+#    unless form
     unless page.link_with(:text => "Manage Your Applications")
+      p page
       raise "Failed to log in"
     end
   end
@@ -29,13 +33,16 @@ class ItunesConnect
 
   def daily_reports(final_date = nil)
     reports = []
-    page = @agent.page.link_with(:text => "Sales/Trend Reports").click
+    page = @agent.page.link_with(:text => "Sales and Trends").click
+    #page = @agent.page
 
     form = page.form_with(:name => "frmVendorPage")
     form.field_with(:value => "Select Date Type").value="Daily"
     form.field_with(:name => "hiddenDayOrWeekSelection").value="Daily"
     form.field_with(:name => "hiddenSubmitTypeName").value="ShowDropDown"
     form.submit
+
+    sleep 1
 
     date = final_date
     while result = daily_report(date)
@@ -53,12 +60,14 @@ class ItunesConnect
     form.field_with(:name => "hiddenSubmitTypeName").value="Download"
     select = form.fields.last
     options = select.options
-    options = options.sort_by{|option| ItunesConnect.parse_date(option.value)}
+    puts "options: #{options.map{|o|o.value}.join(' ')}"
+    options = options.sort_by{|option| ItunesConnect.parse_date(option.value)}.compact
     options.each do |option|
       date = ItunesConnect.parse_date(option.value)
       if !final_date || final_date < date
         select.value = option.value
         file = form.submit
+        raise "invalid filename: #{file.filename}" unless file.filename =~ /^S_D_/
         puts "downloaded: #{file.filename}"
         sleep 1
         @agent.back
@@ -74,8 +83,10 @@ class ItunesConnect
         parsed = Date.new($1.to_i, $2.to_i, $3.to_i)
       elsif date =~ /^(\d{2})\/(\d{2})\/(\d{4})$/
         parsed = Date.new($3.to_i, $1.to_i, $2.to_i)
+      elsif date =~ /^(Select|Monthly)/ # header
+        return nil
       else
-        raise "unknown format"
+        raise "unknown format: #{date}"
       end
       parsed
     end
